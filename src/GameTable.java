@@ -1,14 +1,15 @@
-import java.awt.*;
-import java.awt.event.*;
-import java.util.*;
 import javax.swing.*;
+import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.util.Random;
 
-public class gameView extends JPanel implements Runnable{
+public class GameTable extends JPanel implements Runnable, Movement {
     private final int ballDiameter = 20;
     private final int playerPlatformWidth = 10;
     private final int playerPlatformHeight = 100;
     private final int gameWidth = 1000;
-    private final int gameHeight = (int)(gameWidth *(0.5555));
+    private final int gameHeight = (int) (gameWidth * (0.5555));
     private final Dimension screenSize = new Dimension(gameWidth, gameHeight);
 
     //Player scores
@@ -16,17 +17,17 @@ public class gameView extends JPanel implements Runnable{
     private int player2Score;
     private int winScore;
 
-    Thread gameThread;
-    Image image;
-    Graphics graphics;
-    Random random;
-    player player1;
-    player player2;
-    ball ball;
+    private Thread gameThread;
+    private Image image;
+    private Graphics graphics;
+    private Random random;
+    private Player player1;
+    private Player player2;
+    private Ball ball;
 
-    public gameView(){
+    public GameTable() {
         newPlayerPlatforms();
-        startBall();
+        throwBall();
         winScore = 5;
         this.setFocusable(true);
         this.addKeyListener(new keyListener());
@@ -36,14 +37,14 @@ public class gameView extends JPanel implements Runnable{
         gameThread.start();
     }
 
-    public void startBall(){
+    private void throwBall(){
         random = new Random();
-        ball = new ball((gameWidth /2)-(ballDiameter /2),random.nextInt(gameHeight - ballDiameter), ballDiameter, ballDiameter);
+        ball = Ball.getInstance((gameWidth / 2) - (ballDiameter / 2), random.nextInt(gameHeight - ballDiameter), ballDiameter, ballDiameter);
     }
 
-    public void newPlayerPlatforms(){
-        player1 = new player(0,(gameHeight /2)-(playerPlatformHeight /2), playerPlatformWidth, playerPlatformHeight,1);
-        player2 = new player(gameWidth - playerPlatformWidth,(gameHeight /2)-(playerPlatformHeight /2), playerPlatformWidth, playerPlatformHeight,2);
+    private void newPlayerPlatforms() {
+        player1 = new Player(0, (gameHeight / 2) - (playerPlatformHeight / 2), playerPlatformWidth, playerPlatformHeight, 1);
+        player2 = new Player(gameWidth - playerPlatformWidth, (gameHeight / 2) - (playerPlatformHeight / 2), playerPlatformWidth, playerPlatformHeight, 2);
     }
 
     public void paint(Graphics graph){
@@ -53,14 +54,14 @@ public class gameView extends JPanel implements Runnable{
         graph.drawImage(image,0,0,this);
     }
 
-    public void draw(Graphics graphics){
+    private void draw(Graphics graphics){
         player1.draw(graphics);
         player2.draw(graphics);
         ball.draw(graphics);
         displayScore(graphics);
     }
 
-    public void displayScore(Graphics graph){
+    private void displayScore(Graphics graph){
         graph.setColor(Color.white);
         graph.setFont(new Font("Consolas",Font.PLAIN,60));
         graph.drawLine(gameWidth/2,0, gameWidth/2, gameHeight);
@@ -75,50 +76,41 @@ public class gameView extends JPanel implements Runnable{
         }
     }
 
-    public void win(int id) {
+    private void win(int id) {
         graphics.setColor(Color.white);
         graphics.fillRect((gameWidth/2)-232,(gameHeight/2)-90,gameWidth/2,gameHeight/4);
         graphics.setColor(Color.black);
         graphics.drawString("Player "+String.valueOf(id)+" won !",(gameWidth/2)-213,(gameHeight/2));
     }
 
+    @Override
     public void move(){
         player1.move();
         player2.move();
         ball.move();
     }
 
-    public void collisionDetection(){
+    private void collisionDetection(){
         //bounce ball off top & bottom window edges
         if(ball.y <= 0) {
-            ball.setYDirection(-ball.yVelocity);
+            ball.invertYDirection();
         }
         if(ball.y >= gameHeight - ballDiameter) {
-            ball.setYDirection(-ball.yVelocity);
+            ball.invertYDirection();
         }
 
         //bounce ball off player platforms and increase speed
         if(ball.intersects(player1)) {
-            ball.xVelocity = Math.abs(ball.xVelocity);
-            ball.xVelocity++;
-            if(ball.yVelocity > 0){
-                ball.yVelocity++;
-            }
-            else{
-                ball.yVelocity--;
-            }
-            ball.setXDirection(ball.xVelocity);
-            ball.setYDirection(ball.yVelocity);
+            ball.setXDirection(Math.abs(ball.getXDirection()));
+            ball.setXDirection(ball.getXDirection()+1);
+            ball.setXDirection(ball.getXDirection());
+            ball.setYDirection(ball.getYDirection());
         }
         if(ball.intersects(player2)) {
-            ball.xVelocity = Math.abs(ball.xVelocity);
-            ball.xVelocity++;
-            if(ball.yVelocity > 0)
-                ball.yVelocity++;
-            else
-                ball.yVelocity--;
-            ball.setXDirection(-ball.xVelocity);
-            ball.setYDirection(ball.yVelocity);
+            ball.setXDirection(Math.abs(ball.getXDirection()));
+            ball.setXDirection(ball.getXDirection()+1);
+            ball.setXDirection(-ball.getXDirection());
+            ball.setYDirection(ball.getYDirection());
         }
 
         //dont allow player platforms to exit window edges
@@ -138,11 +130,11 @@ public class gameView extends JPanel implements Runnable{
         //append one point to player who scored
         if(ball.x <= 0) {
             player2Score++;
-            startBall();
+            ball.resetBall(gameWidth,gameHeight,ballDiameter);
         }
         if(ball.x >= gameWidth - ballDiameter) {
             player1Score++;
-            startBall();
+            ball.resetBall(gameWidth,gameHeight,ballDiameter);
         }
     }
 
@@ -172,7 +164,7 @@ public class gameView extends JPanel implements Runnable{
         }
     }
 
-    public class keyListener extends KeyAdapter{
+    private class keyListener extends KeyAdapter{
         public void keyPressed(KeyEvent e){
             player1.keyPressed(e);
             player2.keyPressed(e);

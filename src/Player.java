@@ -1,17 +1,17 @@
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.KeyEvent;
 
-public class player extends Rectangle{
+public class Player extends Rectangle implements Movement {
     private int id;
     private int yVelocity;
     private int speed = 10;
 
-    public player(int x, int y, int paddleWidth, int paddleHeight, int id){
-        super(x,y,paddleWidth,paddleHeight);
+    public Player(int x, int y, int paddleWidth, int paddleHeight, int id) {
+        super(x, y, paddleWidth, paddleHeight);
         this.id = id;
     }
 
-    public void keyPressed(KeyEvent e){
+    public void keyPressed(KeyEvent e) {
         switch (id){
             case 1:
                 if(e.getKeyCode()==KeyEvent.VK_W){
@@ -65,6 +65,7 @@ public class player extends Rectangle{
         yVelocity = yDir;
     }
 
+    @Override
     public void move(){
         y = y + yVelocity;
     }
